@@ -24,7 +24,7 @@ following example playbooks are included in this repo:
 - **`tls-pkcs12.yml`**      - TLS via provided PKCS12 bundle
 
 All of the example playbooks use ansible-vault for security sensitive
-variables.  The examples use 'password' for all secrets, including the
+variables.  The examples use `password` for all secrets, including the
 vault password itself.  New secrets should be generated and updated in
 the playbooks to avoid using the hard-coded example.  Instructions for
 doing this are in comments in the example playbooks.
@@ -45,10 +45,10 @@ command line as an extra-var:
 Variables
 ---------
 You can choose what version of Keycloak to install by setting the following
-variable.  This will be used to determine the download URL at
-https://downloads.jboss.org/keycloak:
+variable.  This will be used to determine the download URL to use from
+https://www.keycloak.org/downloads.html:
 
-- `keycloak_version` (default: `4.8.1.Final`)
+- `keycloak_version` (default: `4.8.2.Final`)
 
 The following variable always needs to be provided, as the role does
 not hardcode a default:

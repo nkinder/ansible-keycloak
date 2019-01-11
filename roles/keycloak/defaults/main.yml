@@ -1,6 +1,6 @@
 ---
 # Version and download settings
-keycloak_version: 4.8.1.Final
+keycloak_version: 4.8.2.Final
 keycloak_archive: keycloak-{{ keycloak_version }}.zip
 keycloak_url: https://downloads.jboss.org/keycloak/{{ keycloak_version }}/{{ keycloak_archive }}
 keycloak_local_download_dest: ~/keycloak_download
