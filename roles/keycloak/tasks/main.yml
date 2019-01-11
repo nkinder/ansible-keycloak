@@ -1,0 +1,221 @@
+---
+
+- name: create local download location
+  local_action:
+    module: file
+    dest: "{{ keycloak_local_download_dest }}"
+    state: directory
+
+- name: download Keycloak locally
+  local_action:
+    module: get_url
+    url: "{{ keycloak_url }}"
+    dest: "{{ keycloak_local_download_dest }}/{{ keycloak_archive }}"
+
+- name: install dependencies
+  yum:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - firewalld
+    - java-openjdk
+    - unzip
+  become: yes
+
+- name: create Keycloak service user/group
+  user:
+    name: "{{ keycloak_service_user }}"
+    home: /
+    shell: /sbin/nologin
+    system: yes
+    create_home: no
+  become: yes
+
+- name: create Keycloak install location
+  file:
+    dest: "{{ keycloak_dest }}"
+    state: directory
+    owner: "{{ keycloak_service_user }}"
+    group: "{{ keycloak_service_group }}"
+  become: yes
+
+- name: check for an existing deployment
+  stat:
+    path: "{{ keycloak_jboss_home }}"
+  register: existing_deploy
+  become: yes
+
+# We don't overwrite an existing deployment by default, as changes
+# may have been made within Keycloak's database that would be lost.
+# A force variable can be set to overwrite the existing deployment.
+- block:
+  - fail:
+      msg: "Keycloak deployment already exists at {{ keycloak_jboss_home }} (force=yes to overwrite)"
+    when: (force is undefined) or
+          (force != "yes")
+  - systemd:
+      name: keycloak
+      state: stopped
+    become: yes
+  - file:
+      path: "{{ keycloak_jboss_home }}"
+      state: absent
+    become: yes
+  when: existing_deploy.stat.exists == True
+
+- name: extract Keycloak archive
+  unarchive:
+    src: "{{ keycloak_local_download_dest }}/{{ keycloak_url | basename }}"
+    dest: "{{ keycloak_dest }}"
+    creates: "{{ keycloak_jboss_home }}"
+    owner: "{{ keycloak_service_user }}"
+    group: "{{ keycloak_service_group }}"
+  become: yes
+
+- name: create Keycloak admin user
+  command:
+  args:
+    argv:
+      - "{{ keycloak_jboss_home }}/bin/add-user-keycloak.sh"
+      - -r master
+      - -u {{ keycloak_admin_user }}
+      - -p {{ keycloak_admin_password }}
+    creates: "{{ keycloak_jboss_home }}/standalone/configuration/keycloak-add-user.json"
+  become: yes
+
+- name: import CA certificate into keystore
+  block:
+  - copy:
+      src: "{{ keycloak_tls_ca_certificate }}"
+      dest: "{{ keycloak_jboss_home }}/standalone/configuration/ansible-keycloak-ca.pem"
+  - java_cert:
+      cert_alias: ansible-keycloak-ca
+      cert_path: "{{ keycloak_jboss_home }}/standalone/configuration/ansible-keycloak-ca.pem"
+      keystore_path: "{{ keycloak_jboss_home }}/standalone/configuration/keycloak.jks"
+      keystore_pass: "{{ keycloak_admin_password }}"
+      keystore_create: true
+  when: keycloak_tls_ca_certificate is defined
+  become: yes
+
+# We only generate a PKCS12 bundle if the key and cert parameters
+# have been provided and an existing pkcs12 parameter has not been
+# provided.  We favor a provided PKCS12 bundle over passing in
+# key/cert files.
+- name: locally generate PKCS12 bundle for TLS
+  local_action:
+    module: openssl_pkcs12
+    action: export
+    force: yes
+    path: "{{ keycloak_local_download_dest }}/ansible-keycloak-server.p12"
+    passphrase: "{{ keycloak_tls_pkcs12_passphrase | default(keycloak_admin_password) }}"
+    friendly_name: ansible-keycloak-server
+    privatekey_path: "{{ keycloak_tls_key }}"
+    certificate_path: "{{ keycloak_tls_cert }}"
+  register: keycloak_generated_pkcs12_bundle
+  when:
+    - keycloak_tls_key is defined
+    - keycloak_tls_cert is defined
+    - keycloak_tls_pkcs12 is not defined
+ 
+- name: import pkcs12 bundle into keystore
+  block:
+  - copy:
+      src: "{{ keycloak_tls_pkcs12 | default(keycloak_local_download_dest + '/ansible-keycloak-server.p12') }}"
+      dest: "{{ keycloak_jboss_home }}/standalone/configuration/ansible-keycloak-server.p12"
+  - java_cert:
+      cert_alias: ansible-keycloak-server
+      keystore_path: "{{ keycloak_jboss_home }}/standalone/configuration/keycloak.jks"
+      keystore_pass: "{{ keycloak_admin_password }}"
+      keystore_create: true
+      pkcs12_path: "{{ keycloak_jboss_home }}/standalone/configuration/ansible-keycloak-server.p12"
+      pkcs12_password: "{{ keycloak_tls_pkcs12_passphrase | default(keycloak_admin_password) }}"
+      pkcs12_alias: ansible-keycloak-server
+  when: (keycloak_tls_pkcs12 is defined) or
+        (keycloak_generated_pkcs12_bundle is changed)
+  become: yes
+
+- name: enable and start the firewalld service
+  systemd:
+    name: firewalld
+    enabled: yes
+    state: started
+  become: yes
+
+- name: configure firewall for Keycloak ports
+  firewalld:
+    port: "{{ item }}"
+    permanent: true
+    state: enabled
+    immediate: yes
+  with_items:
+    - "{{keycloak_http_port}}/tcp"
+    - "{{keycloak_https_port}}/tcp"
+  become: yes
+
+- name: configure sysconfig file for keycloak service
+  template:
+    src: keycloak-sysconfig.j2
+    dest: /etc/sysconfig/keycloak
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+
+- name: configure systemd unit file for keycloak service
+  template:
+    src: keycloak.service.j2
+    dest: /etc/systemd/system/keycloak.service
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+  become: yes
+
+- name: enable and start the keycloak service
+  systemd:
+    name: keycloak
+    enabled: yes
+    state: started
+  become: yes
+
+# The jboss-cli.sh tool requires the management interface to be up,
+# so we wait until it is available.  The management interface comes
+# up in two stages, so we first need to wait for an answer on the port
+# and we still need a long timeout for the jboss-cli.sh tool to wait
+# for internal first-boot initialization to complete.  We must finally
+# restart the keycloak service for our changes to take effect.
+- name: enable TLS in Keycloak server configuration file
+  block:
+  - wait_for:
+      port: 9990
+  - command:
+    args:
+      argv:
+        - "{{ keycloak_jboss_home }}/bin/jboss-cli.sh"
+        - --connect
+        - --timeout=30000
+        - "/core-service=management/security-realm=UndertowRealm:add()"
+  - command:
+    args:
+      argv:
+        - "{{ keycloak_jboss_home }}/bin/jboss-cli.sh"
+        - --connect
+        - --timeout=30000
+        - "/core-service=management/security-realm=UndertowRealm/server-identity=ssl:add(keystore-path=keycloak.jks, keystore-relative-to=jboss.server.config.dir, keystore-password={{ keycloak_admin_password }})"
+  - command:
+    args:
+      argv:
+        - "{{ keycloak_jboss_home }}/bin/jboss-cli.sh"
+        - --connect
+        - --timeout=30000
+        - "/subsystem=undertow/server=default-server/https-listener=https:write-attribute(name=security-realm, value=UndertowRealm)"
+  - systemd:
+      name: keycloak
+      state: restarted
+  become: yes
+  when: (keycloak_tls_pkcs12 is defined) or
+        (keycloak_generated_pkcs12_bundle is changed)

@@ -1,0 +1,18 @@
+---
+# Version and download settings
+keycloak_version: 4.8.1.Final
+keycloak_archive: keycloak-{{ keycloak_version }}.zip
+keycloak_url: https://downloads.jboss.org/keycloak/{{ keycloak_version }}/{{ keycloak_archive }}
+keycloak_local_download_dest: ~/keycloak_download
+
+# Install location and service settings
+keycloak_dest: /opt/keycloak
+keycloak_jboss_home: "{{ keycloak_dest }}/keycloak-{{ keycloak_version }}"
+keycloak_service_user: keycloak
+keycloak_service_group: keycloak
+
+# Keycloak configuration settings
+keycloak_bind_address: 0.0.0.0
+keycloak_http_port: 8080
+keycloak_https_port: 8443
+keycloak_admin_user: admin
