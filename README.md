@@ -12,6 +12,7 @@ the creation of the system user and the service.
 This role also handles some of the initial Keycloak server configuration.
 This includes configuring what ports to listen on, creating an initial
 admin user, and configuring TLS via self-signed or provided certificates.
+Firewall configuration is also handled.
 
 Usage
 -----
