@@ -47,38 +47,38 @@ You can choose what version of Keycloak to install by setting the following
 variable.  This will be used to determine the download URL at
 https://downloads.jboss.org/keycloak:
 
-  `keycloak_version` (default: `4.8.1.Final`)
+- `keycloak_version` (default: `4.8.1.Final`)
 
 The following variable always needs to be provided, as the role does
 not hardcode a default:
 
-  `keycloak_admin_password` (use ansible-vault to protect)
+- `keycloak_admin_password` (use ansible-vault to protect)
 
 You can choose a non-default admin account name by setting the following
 variable:
 
-  `keycloak_admin_user` (default: `admin`)
+- `keycloak_admin_user` (default: `admin`)
 
 To configure the interface and ports that the Keycloak server listens
 on, the following variables can be set:
 
-  `keycloak_bind_address` (default: `0.0.0.0`)
-  `keycloak_http_port` (default: `8080`)
-  `keycloak_https_port` (default: `8443`)
+- `keycloak_bind_address` (default: `0.0.0.0`)
+- `keycloak_http_port` (default: `8080`)
+- `keycloak_https_port` (default: `8443`)
 
 For TLS via PKCS12 bundle, the following additional variables must be
 provided:
 
-  `keycloak_tls_ca_certificate` (local path to CA cert file)
-  `keycloak_tls_pkcs12` (local path to PKCS12 bundle)
-  `keycloak_tls_pkcs12_passphrase` (use ansible-vault to protect)
+- `keycloak_tls_ca_certificate` (local path to CA cert file)
+- `keycloak_tls_pkcs12` (local path to PKCS12 bundle)
+- `keycloak_tls_pkcs12_passphrase` (use ansible-vault to protect)
 
 For TLS via key/cert files, the following additional variables must be
 provided:
 
-  `keycloak_tls_ca_certificate` (local path to CA cert file)
-  `keycloak_tls_cert` (local path to TLS server cert file)
-  `keycloak_tls_key` (local path to TLS server key file)
+- `keycloak_tls_ca_certificate` (local path to CA cert file)
+- `keycloak_tls_cert` (local path to TLS server cert file)
+- `keycloak_tls_key` (local path to TLS server key file)
 
 See `roles/keycloak/defaults/main.yml` for a list of other variable
 defaults that one may want to override.
