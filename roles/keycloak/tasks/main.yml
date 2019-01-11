@@ -57,6 +57,7 @@
       name: keycloak
       state: stopped
     become: yes
+    ignore_errors: yes
   - file:
       path: "{{ keycloak_jboss_home }}"
       state: absent
