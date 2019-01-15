@@ -6,12 +6,6 @@
     dest: "{{ keycloak_local_download_dest }}"
     state: directory
 
-- name: download Keycloak locally
-  local_action:
-    module: get_url
-    url: "{{ keycloak_url }}"
-    dest: "{{ keycloak_local_download_dest }}/{{ keycloak_archive }}"
-
 - name: install dependencies
   yum:
     name: "{{ packages }}"
@@ -64,14 +58,40 @@
     become: yes
   when: existing_deploy.stat.exists == True
 
-- name: extract Keycloak archive
-  unarchive:
-    src: "{{ keycloak_local_download_dest }}/{{ keycloak_url | basename }}"
-    dest: "{{ keycloak_dest }}"
-    creates: "{{ keycloak_jboss_home }}"
-    owner: "{{ keycloak_service_user }}"
-    group: "{{ keycloak_service_group }}"
+- block:
+  - name: download Keycloak archive to target
+    get_url:
+      url: "{{ keycloak_url }}"
+      dest: "{{ keycloak_dest }}"
+      owner: "{{ keycloak_service_user }}"
+      group: "{{ keycloak_service_group }}"
+  - name: extract Keycloak archive on target
+    unarchive:
+      remote_src: yes
+      src: "{{ keycloak_dest }}/{{ keycloak_url | basename }}"
+      dest: "{{ keycloak_dest }}"
+      creates: "{{ keycloak_jboss_home }}"
+      owner: "{{ keycloak_service_user }}"
+      group: "{{ keycloak_service_group }}"
   become: yes
+  when: keycloak_archive_on_target
+
+- block:
+  - name: download Keycloak archive to local
+    local_action:
+      module: get_url
+      url: "{{ keycloak_url }}"
+      dest: "{{ keycloak_local_download_dest }}/{{ keycloak_archive }}"
+  - name: extract Keycloak archive on local
+    unarchive:
+      remote_src: no
+      src: "{{ keycloak_local_download_dest }}/{{ keycloak_url | basename }}"
+      dest: "{{ keycloak_dest }}"
+      creates: "{{ keycloak_jboss_home }}"
+      owner: "{{ keycloak_service_user }}"
+      group: "{{ keycloak_service_group }}"
+  become: yes
+  when: not keycloak_archive_on_target
 
 - name: create Keycloak admin user
   command:

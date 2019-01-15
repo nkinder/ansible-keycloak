@@ -42,6 +42,33 @@ command line as an extra-var:
 
   `ansible-playbook ... --extra-vars "force=yes"`
 
+Controlling the location of the Keycloak archive
+------------------------------------------------
+
+By default the Keycloak archive will be downloaded to the local system
+where the playbook is being run from. It will reside in the directory
+specified by the variable `keycloak_local_download_dest`. When the
+archive is extracted on the target system the archive will be read on
+the local system and the files created on the destination target. This
+behavior has the advantage of downloading the archive only once and
+not storing the archive on the target but it incurs a network penalty
+of transferring the archive contents again for every target during the
+extraction process. If you have a slow upload network link on the host
+running the playbook the non-local extraction may be untenable.
+
+Alternately you have the option to download the archive directly to
+the target and extract the archive on the target, this is controlled
+by the `keycloak_archive_on_target` variable. This has the advantage
+of transferring the archive data only once. The archive extraction
+will be fast because there is no network traffic during the extraction
+because all data is local to the target. However it will leave the
+archive on the target after extraction.
+
+To change the location of the archive on the command line add this
+argument to your playbook command line:
+
+  `-e "{keycloak_archive_on_target: True}"`
+  
 Variables
 ---------
 You can choose what version of Keycloak to install by setting the following
