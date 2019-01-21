@@ -1,5 +1,9 @@
 ---
 
+- name: check if all required variables are set
+  fail: msg="The variable keycloak_admin_password must be explicitly set"
+  when: keycloak_admin_password is not defined
+
 - name: set the python interpreter to use on the target
   import_tasks: "{{role_path}}/tasks/python_2_3_test.yml"
 
