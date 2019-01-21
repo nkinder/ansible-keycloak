@@ -19,4 +19,3 @@
     keycloak_tls_ca_certificate: ~/ca.crt
     keycloak_tls_cert: ~/keycloak-server.crt
     keycloak_tls_key: ~/keycloak-server.key
-
