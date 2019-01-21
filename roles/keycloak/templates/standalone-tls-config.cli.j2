@@ -1,0 +1,19 @@
+# Add a new security realm
+/core-service=management/ \
+  security-realm=UndertowRealm \
+    :add()
+
+# Configure the security realm for our keystore
+/core-service=management/ \
+  security-realm=UndertowRealm/ \
+    server-identity=ssl \
+      :add(keystore-path=keycloak.jks, \
+           keystore-relative-to=jboss.server.config.dir, \
+           keystore-password={{ keycloak_admin_password }})
+
+#  Enable https listener for the new security realm
+/subsystem=undertow/ \
+  server=default-server/ \
+    https-listener=https \
+      :write-attribute(name=security-realm, \
+                       value=UndertowRealm)

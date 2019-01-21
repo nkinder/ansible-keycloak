@@ -11,9 +11,9 @@
     name: "{{ packages }}"
   vars:
     packages:
-    - firewalld
-    - java-openjdk
-    - unzip
+      - firewalld
+      - java-openjdk
+      - unzip
   become: yes
 
 - name: create Keycloak service user/group
@@ -43,54 +43,59 @@
 # may have been made within Keycloak's database that would be lost.
 # A force variable can be set to overwrite the existing deployment.
 - block:
-  - fail:
-      msg: "Keycloak deployment already exists at {{ keycloak_jboss_home }} (force=yes to overwrite)"
-    when: (force is undefined) or
-          (force != "yes")
-  - systemd:
-      name: keycloak
-      state: stopped
-    become: yes
-    ignore_errors: yes
-  - file:
-      path: "{{ keycloak_jboss_home }}"
-      state: absent
-    become: yes
+    - name: check if we should force overwrite an existing deployment
+      fail:
+        msg: >-
+          Keycloak deployment already exists at {{ keycloak_jboss_home }}
+          (force=yes to overwrite)
+      when: (force is undefined) or
+            (force != "yes")
+    - name: stop the old keycloak service
+      systemd:
+        name: keycloak
+        state: stopped
+      become: yes
+      ignore_errors: yes
+    - name: remote the old Keycloak deployment
+      file:
+        path: "{{ keycloak_jboss_home }}"
+        state: absent
+      become: yes
   when: existing_deploy.stat.exists == True
 
 - block:
-  - name: download Keycloak archive to target
-    get_url:
-      url: "{{ keycloak_url }}"
-      dest: "{{ keycloak_dest }}"
-      owner: "{{ keycloak_service_user }}"
-      group: "{{ keycloak_service_group }}"
-  - name: extract Keycloak archive on target
-    unarchive:
-      remote_src: yes
-      src: "{{ keycloak_dest }}/{{ keycloak_url | basename }}"
-      dest: "{{ keycloak_dest }}"
-      creates: "{{ keycloak_jboss_home }}"
-      owner: "{{ keycloak_service_user }}"
-      group: "{{ keycloak_service_group }}"
+    - name: download Keycloak archive to target
+      get_url:
+        url: "{{ keycloak_url }}"
+        dest: "{{ keycloak_dest }}"
+        owner: "{{ keycloak_service_user }}"
+        group: "{{ keycloak_service_group }}"
+    - name: extract Keycloak archive on target
+      unarchive:
+        remote_src: yes
+        src: "{{ keycloak_dest }}/{{ keycloak_url | basename }}"
+        dest: "{{ keycloak_dest }}"
+        creates: "{{ keycloak_jboss_home }}"
+        owner: "{{ keycloak_service_user }}"
+        group: "{{ keycloak_service_group }}"
   become: yes
   when: keycloak_archive_on_target
 
 - block:
-  - name: download Keycloak archive to local
-    local_action:
-      module: get_url
-      url: "{{ keycloak_url }}"
-      dest: "{{ keycloak_local_download_dest }}/{{ keycloak_archive }}"
-  - name: extract Keycloak archive on local
-    unarchive:
-      remote_src: no
-      src: "{{ keycloak_local_download_dest }}/{{ keycloak_url | basename }}"
-      dest: "{{ keycloak_dest }}"
-      creates: "{{ keycloak_jboss_home }}"
-      owner: "{{ keycloak_service_user }}"
-      group: "{{ keycloak_service_group }}"
-  become: yes
+    - name: download Keycloak archive to local
+      local_action:
+        module: get_url
+        url: "{{ keycloak_url }}"
+        dest: "{{ keycloak_local_download_dest }}/{{ keycloak_archive }}"
+    - name: extract Keycloak archive on local
+      unarchive:
+        remote_src: no
+        src: "{{ keycloak_local_download_dest }}/{{ keycloak_url | basename }}"
+        dest: "{{ keycloak_dest }}"
+        creates: "{{ keycloak_jboss_home }}"
+        owner: "{{ keycloak_service_user }}"
+        group: "{{ keycloak_service_group }}"
+      become: yes
   when: not keycloak_archive_on_target
 
 - name: create Keycloak admin user
@@ -101,20 +106,24 @@
       - -r master
       - -u {{ keycloak_admin_user }}
       - -p {{ keycloak_admin_password }}
-    creates: "{{ keycloak_jboss_home }}/standalone/configuration/keycloak-add-user.json"
+    creates: "{{ keycloak_config_dir }}/keycloak-add-user.json"
   become: yes
+  tags:
+    - skip_ansible_lint
 
-- name: import CA certificate into keystore
+- name: configure CA certificate
   block:
-  - copy:
-      src: "{{ keycloak_tls_ca_certificate }}"
-      dest: "{{ keycloak_jboss_home }}/standalone/configuration/ansible-keycloak-ca.pem"
-  - java_cert:
-      cert_alias: ansible-keycloak-ca
-      cert_path: "{{ keycloak_jboss_home }}/standalone/configuration/ansible-keycloak-ca.pem"
-      keystore_path: "{{ keycloak_jboss_home }}/standalone/configuration/keycloak.jks"
-      keystore_pass: "{{ keycloak_admin_password }}"
-      keystore_create: true
+    - name: copy CA certificate to target host
+      copy:
+        src: "{{ keycloak_tls_ca_certificate }}"
+        dest: "{{ keycloak_config_dir }}/ansible-keycloak-ca.pem"
+    - name: import the CA cert
+      java_cert:
+        cert_alias: ansible-keycloak-ca
+        cert_path: "{{ keycloak_config_dir }}/ansible-keycloak-ca.pem"
+        keystore_path: "{{ keycloak_config_dir }}/keycloak.jks"
+        keystore_pass: "{{ keycloak_admin_password }}"
+        keystore_create: true
   when: keycloak_tls_ca_certificate is defined
   become: yes
 
@@ -128,7 +137,8 @@
     action: export
     force: yes
     path: "{{ keycloak_local_download_dest }}/ansible-keycloak-server.p12"
-    passphrase: "{{ keycloak_tls_pkcs12_passphrase | default(keycloak_admin_password) }}"
+    passphrase: "{{ keycloak_tls_pkcs12_passphrase |
+                 default(keycloak_admin_password) }}"
     friendly_name: ansible-keycloak-server
     privatekey_path: "{{ keycloak_tls_key }}"
     certificate_path: "{{ keycloak_tls_cert }}"
@@ -137,20 +147,24 @@
     - keycloak_tls_key is defined
     - keycloak_tls_cert is defined
     - keycloak_tls_pkcs12 is not defined
- 
-- name: import pkcs12 bundle into keystore
+
+- name: configure keystore for server certificate
   block:
-  - copy:
-      src: "{{ keycloak_tls_pkcs12 | default(keycloak_local_download_dest + '/ansible-keycloak-server.p12') }}"
-      dest: "{{ keycloak_jboss_home }}/standalone/configuration/ansible-keycloak-server.p12"
-  - java_cert:
-      cert_alias: ansible-keycloak-server
-      keystore_path: "{{ keycloak_jboss_home }}/standalone/configuration/keycloak.jks"
-      keystore_pass: "{{ keycloak_admin_password }}"
-      keystore_create: true
-      pkcs12_path: "{{ keycloak_jboss_home }}/standalone/configuration/ansible-keycloak-server.p12"
-      pkcs12_password: "{{ keycloak_tls_pkcs12_passphrase | default(keycloak_admin_password) }}"
-      pkcs12_alias: ansible-keycloak-server
+    - name: copy pkcs12 bundle to target host
+      copy:
+        src: "{{ keycloak_tls_pkcs12 | default(keycloak_local_download_dest +
+              '/ansible-keycloak-server.p12') }}"
+        dest: "{{ keycloak_config_dir }}/ansible-keycloak-server.p12"
+    - name: import pkcs12 bundle into keystore
+      java_cert:
+        cert_alias: ansible-keycloak-server
+        keystore_path: "{{ keycloak_config_dir }}/keycloak.jks"
+        keystore_pass: "{{ keycloak_admin_password }}"
+        keystore_create: true
+        pkcs12_path: "{{ keycloak_config_dir }}/ansible-keycloak-server.p12"
+        pkcs12_password: "{{ keycloak_tls_pkcs12_passphrase |
+                          default(keycloak_admin_password) }}"
+        pkcs12_alias: ansible-keycloak-server
   when: (keycloak_tls_pkcs12 is defined) or
         (keycloak_generated_pkcs12_bundle is changed)
   become: yes
@@ -211,32 +225,34 @@
 # restart the keycloak service for our changes to take effect.
 - name: enable TLS in Keycloak server configuration file
   block:
-  - wait_for:
-      port: 9990
-  - command:
-    args:
-      argv:
-        - "{{ keycloak_jboss_home }}/bin/jboss-cli.sh"
-        - --connect
-        - --timeout=30000
-        - "/core-service=management/security-realm=UndertowRealm:add()"
-  - command:
-    args:
-      argv:
-        - "{{ keycloak_jboss_home }}/bin/jboss-cli.sh"
-        - --connect
-        - --timeout=30000
-        - "/core-service=management/security-realm=UndertowRealm/server-identity=ssl:add(keystore-path=keycloak.jks, keystore-relative-to=jboss.server.config.dir, keystore-password={{ keycloak_admin_password }})"
-  - command:
-    args:
-      argv:
-        - "{{ keycloak_jboss_home }}/bin/jboss-cli.sh"
-        - --connect
-        - --timeout=30000
-        - "/subsystem=undertow/server=default-server/https-listener=https:write-attribute(name=security-realm, value=UndertowRealm)"
-  - systemd:
-      name: keycloak
-      state: restarted
+    - name: wait for Keycloak management interface to be available
+      wait_for:
+        port: 9990
+    - name: create jboss-cli.sh command file
+      template:
+        src: standalone-tls-config.cli.j2
+        dest: "{{ keycloak_config_dir }}/standalone-tls-config.cli"
+        owner: root
+        group: root
+        mode: 0600
+    - name: apply keycloak TLS configuration
+      command:
+      args:
+        argv:
+          - "{{ keycloak_jboss_home }}/bin/jboss-cli.sh"
+          - --connect
+          - --timeout=30000
+          - --file={{ keycloak_config_dir }}/standalone-tls-config.cli
+      tags:
+        - skip_ansible_lint
+    - name: clean up jboss-cli-sh command file
+      file:
+        path: "{{ keycloak_config_dir }}/standalone-tls-config.cli"
+        state: absent
+    - name: restart keycloak service to pick up TLS configuration changes
+      systemd:
+        name: keycloak
+        state: restarted
   become: yes
   when: (keycloak_tls_pkcs12 is defined) or
         (keycloak_generated_pkcs12_bundle is changed)
