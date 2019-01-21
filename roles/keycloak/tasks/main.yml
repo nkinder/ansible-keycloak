@@ -12,6 +12,7 @@
     module: file
     dest: "{{ keycloak_local_download_dest }}"
     state: directory
+  when: not keycloak_archive_on_target
 
 - name: install dependencies
   package:
