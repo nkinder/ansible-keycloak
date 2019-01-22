@@ -12,7 +12,7 @@
   vars:
     packages:
       - firewalld
-      - java-openjdk
+      - java-1.8.0-openjdk-headless
       - unzip
   become: yes
 
