@@ -7,13 +7,12 @@
     state: directory
 
 - name: install dependencies
-  yum:
-    name: "{{ packages }}"
-  vars:
-    packages:
-      - firewalld
-      - java-1.8.0-openjdk-headless
-      - unzip
+  package:
+    name: "{{ item }}"
+  loop:
+    - firewalld
+    - java-1.8.0-openjdk-headless
+    - unzip
   become: yes
 
 - name: create Keycloak service user/group
