@@ -12,3 +12,6 @@ install:
   - pip install molecule docker
 script:
   - cd roles/keycloak && molecule test
+branches:
+  only:
+  - master
