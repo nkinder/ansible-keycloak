@@ -19,5 +19,8 @@ keycloak_http_port: 8080
 keycloak_https_port: 8443
 keycloak_admin_user: admin
 
+# TLS
+keycloak_keystore_name: ansible-keycloak-server.p12
+
 # Optional Behavior
 keycloak_archive_on_target: false

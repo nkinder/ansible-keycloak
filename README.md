@@ -68,7 +68,7 @@ To change the location of the archive on the command line add this
 argument to your playbook command line:
 
   `-e "{keycloak_archive_on_target: True}"`
-  
+
 Variables
 ---------
 You can choose what version of Keycloak to install by setting the following
@@ -97,14 +97,13 @@ on, the following variables can be set:
 For TLS via PKCS12 bundle, the following additional variables must be
 provided:
 
-- `keycloak_tls_ca_certificate` (local path to CA cert file)
 - `keycloak_tls_pkcs12` (local path to PKCS12 bundle)
 - `keycloak_tls_pkcs12_passphrase` (use ansible-vault to protect)
+- `keycloak_tls_pkcs12_alias` (name of key/cert in `keycloak_tls_pkcs12`)
 
 For TLS via key/cert files, the following additional variables must be
 provided:
 
-- `keycloak_tls_ca_certificate` (local path to CA cert file)
 - `keycloak_tls_cert` (local path to TLS server cert file)
 - `keycloak_tls_key` (local path to TLS server key file)
 

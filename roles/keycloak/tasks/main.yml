@@ -16,6 +16,7 @@
     - firewalld
     - java-1.8.0-openjdk-headless
     - unzip
+    - pyOpenSSL
   become: yes
 
 - name: create Keycloak service user/group
@@ -113,63 +114,74 @@
   tags:
     - skip_ansible_lint
 
-- name: configure CA certificate
+- name: validate and set PKCS12 variables
   block:
-    - name: copy CA certificate to target host
-      copy:
-        src: "{{ keycloak_tls_ca_certificate }}"
-        dest: "{{ keycloak_config_dir }}/ansible-keycloak-ca.pem"
-    - name: import the CA cert
-      java_cert:
-        cert_alias: ansible-keycloak-ca
-        cert_path: "{{ keycloak_config_dir }}/ansible-keycloak-ca.pem"
-        keystore_path: "{{ keycloak_config_dir }}/keycloak.jks"
-        keystore_pass: "{{ keycloak_admin_password }}"
-        keystore_create: true
-  when: keycloak_tls_ca_certificate is defined
-  become: yes
+  - fail:
+      msg: keycloak_tls_pkcs12 requires keycloak_tls_pkcs12_alias
+    when:
+      - keycloak_tls_pkcs12 is defined
+      - keycloak_tls_pkcs12_alias is not defined
+  - set_fact: keycloak_tls_pkcs12_alias="ansible-keycloak-server"
+    when:
+      - keycloak_tls_pkcs12 is not defined
+  - set_fact: keycloak_tls_pkcs12_passphrase="{{ keycloak_tls_pkcs12_passphrase | default(keycloak_admin_password) }}"
 
-# We only generate a PKCS12 bundle if the key and cert parameters
-# have been provided and an existing pkcs12 parameter has not been
-# provided.  We favor a provided PKCS12 bundle over passing in
-# key/cert files.
-- name: locally generate PKCS12 bundle for TLS
-  local_action:
-    module: openssl_pkcs12
-    action: export
-    force: yes
-    path: "{{ keycloak_local_download_dest }}/ansible-keycloak-server.p12"
-    passphrase: "{{ keycloak_tls_pkcs12_passphrase |
-                 default(keycloak_admin_password) }}"
-    friendly_name: ansible-keycloak-server
-    privatekey_path: "{{ keycloak_tls_key }}"
-    certificate_path: "{{ keycloak_tls_cert }}"
-  register: keycloak_generated_pkcs12_bundle
+- name: Allow Keycloak to generate it's own self-signed cert.
+  debug:
+    msg: >-
+      Keycloak will generate it's own self-signed cert.
+      It will not have the correct hostname nor a SAN.
+  when:
+    - keycloak_tls_key is not defined
+    - keycloak_tls_cert is not defined
+    - keycloak_tls_pkcs12 is not defined
+
+- block:
+  - name: copy key to PKCS12 location
+    copy:
+      src: "{{ keycloak_tls_key }}"
+      dest: "{{ keycloak_config_dir }}/tls-key.pem"
+  - name: copy cert to PKCS12 location
+    copy:
+      src: "{{ keycloak_tls_cert }}"
+      dest: "{{ keycloak_config_dir }}/tls-cert.pem"
+  - name: generate PKCS12
+    openssl_pkcs12:
+      action: export
+      force: yes
+      path: "{{ keycloak_config_dir }}/{{ keycloak_keystore_name }}"
+      passphrase: "{{ keycloak_tls_pkcs12_passphrase }}"
+      friendly_name: "{{ keycloak_tls_pkcs12_alias }}"
+      privatekey_path: "{{ keycloak_config_dir }}/tls-key.pem"
+      certificate_path: "{{ keycloak_config_dir }}/tls-cert.pem"
+      owner: "{{ keycloak_service_user }}"
+      group: "{{ keycloak_service_group }}"
+    register: keycloak_generated_pkcs12_bundle
+  - name: remove key from PKCS12 location
+    file:
+      path: "{{ keycloak_config_dir }}/tls-key.pem"
+      state: absent
+  - name: remove cert from PKCS12 location
+    file:
+      path: "{{ keycloak_config_dir }}/tls-cert.pem"
+      state: absent
+  become: yes
   when:
     - keycloak_tls_key is defined
     - keycloak_tls_cert is defined
     - keycloak_tls_pkcs12 is not defined
 
-- name: configure keystore for server certificate
-  block:
-    - name: copy pkcs12 bundle to target host
-      copy:
-        src: "{{ keycloak_tls_pkcs12 | default(keycloak_local_download_dest +
-              '/ansible-keycloak-server.p12') }}"
-        dest: "{{ keycloak_config_dir }}/ansible-keycloak-server.p12"
-    - name: import pkcs12 bundle into keystore
-      java_cert:
-        cert_alias: ansible-keycloak-server
-        keystore_path: "{{ keycloak_config_dir }}/keycloak.jks"
-        keystore_pass: "{{ keycloak_admin_password }}"
-        keystore_create: true
-        pkcs12_path: "{{ keycloak_config_dir }}/ansible-keycloak-server.p12"
-        pkcs12_password: "{{ keycloak_tls_pkcs12_passphrase |
-                          default(keycloak_admin_password) }}"
-        pkcs12_alias: ansible-keycloak-server
-  when: (keycloak_tls_pkcs12 is defined) or
-        (keycloak_generated_pkcs12_bundle is changed)
+- name: copy user provided PKCS12 bundle to server host
+  copy:
+    src: "{{ keycloak_tls_pkcs12 }}"
+    dest: "{{ keycloak_config_dir }}/{{ keycloak_keystore_name }}"
+    owner: "{{ keycloak_service_user }}"
+    group: "{{ keycloak_service_group }}"
   become: yes
+  when:
+    - keycloak_tls_key is not defined
+    - keycloak_tls_cert is not defined
+    - keycloak_tls_pkcs12 is defined
 
 - name: enable and start the firewalld service
   systemd:

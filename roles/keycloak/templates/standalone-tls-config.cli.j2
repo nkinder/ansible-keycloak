@@ -7,9 +7,10 @@
 /core-service=management/ \
   security-realm=UndertowRealm/ \
     server-identity=ssl \
-      :add(keystore-path=keycloak.jks, \
+      :add(keystore-path={{ keycloak_keystore_name }}, \
            keystore-relative-to=jboss.server.config.dir, \
-           keystore-password={{ keycloak_admin_password }})
+           alias={{ keycloak_tls_pkcs12_alias }}, \
+           keystore-password={{ keycloak_tls_pkcs12_passphrase }})
 
 #  Enable https listener for the new security realm
 /subsystem=undertow/ \
