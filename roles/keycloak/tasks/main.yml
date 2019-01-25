@@ -58,7 +58,7 @@
         state: stopped
       become: yes
       ignore_errors: yes
-    - name: remote the old Keycloak deployment
+    - name: remove the old Keycloak deployment
       file:
         path: "{{ keycloak_jboss_home }}"
         state: absent
