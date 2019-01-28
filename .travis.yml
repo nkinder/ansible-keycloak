@@ -14,4 +14,4 @@ script:
   - cd roles/keycloak && molecule test
 branches:
   only:
-  - master
+    - master
