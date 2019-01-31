@@ -221,6 +221,8 @@
     group: root
     mode: 0644
   become: yes
+  notify:
+    - restart keycloak
 
 - name: configure systemd unit file for keycloak service
   template:
@@ -230,18 +232,13 @@
     group: root
     mode: 0644
   become: yes
+  notify:
+    - reload systemd
+    - restart keycloak
 
-- name: reload systemd
-  systemd:
-    daemon_reload: yes
-  become: yes
-
-- name: enable and start the keycloak service
-  systemd:
-    name: keycloak
-    enabled: yes
-    state: started
-  become: yes
+# Force the handlers to run now, as keycloak needs to be running before
+# the next tasks are executed.
+- meta: flush_handlers
 
 # The jboss-cli.sh tool requires the management interface to be up,
 # so we wait until it is available.  The management interface comes
@@ -269,16 +266,14 @@
           - --connect
           - --timeout=30000
           - --file={{ keycloak_config_dir }}/standalone-tls-config.cli
+      notify:
+        - restart keycloak
       tags:
         - skip_ansible_lint
     - name: clean up jboss-cli-sh command file
       file:
         path: "{{ keycloak_config_dir }}/standalone-tls-config.cli"
         state: absent
-    - name: restart keycloak service to pick up TLS configuration changes
-      systemd:
-        name: keycloak
-        state: restarted
   become: yes
   when: (keycloak_tls_pkcs12 is defined) or
         (keycloak_generated_pkcs12_bundle is changed)
