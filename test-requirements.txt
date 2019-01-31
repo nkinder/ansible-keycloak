@@ -1,0 +1,2 @@
+molecule>=2.19.0 # MIT
+docker>=3.7.0 # Apache-2.0
