@@ -1,7 +1,9 @@
 ---
 - name: Converge
   hosts: all
+
   roles:
     - role: keycloak
+
   vars:
     keycloak_admin_password: password

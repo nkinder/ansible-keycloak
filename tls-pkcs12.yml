@@ -7,8 +7,8 @@
     # Use the following commands to create a new encrypted passwords, then
     # update the associated values below:
     #
-    #   ansible-vault encrypt_string --stdin-name 'keycloak_admin_password'
-    #   ansible-vault encrypt_string --stdin-name 'keycloak_tls_pkcs12_passphrase'
+    # ansible-vault encrypt_string --stdin-name 'keycloak_admin_password'
+    # ansible-vault encrypt_string --stdin-name 'keycloak_tls_pkcs12_passphrase'
     #
     keycloak_admin_password: !vault |
           $ANSIBLE_VAULT;1.1;AES256
