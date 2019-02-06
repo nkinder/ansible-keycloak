@@ -10,7 +10,7 @@ lint:
 platforms:
   - name: instance
     image: ${MOLECULE_DISTRO:-"centos:7"}
-    command: /sbin/init
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
     privileged: true
