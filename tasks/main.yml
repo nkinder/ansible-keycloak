@@ -5,11 +5,11 @@
   when: keycloak_admin_password is not defined
 
 - name: set the python interpreter to use on the target
-  import_tasks: "{{role_path}}/tasks/python_2_3_test.yml"
+  import_tasks: "{{ role_path }}/tasks/python_2_3_test.yml"
 
 - name: create local download location
-  local_action:
-    module: file
+  delegate_to: localhost
+  file:
     dest: "{{ keycloak_local_download_dest }}"
     state: directory
   when: not keycloak_archive_on_target
@@ -69,7 +69,7 @@
         path: "{{ keycloak_jboss_home }}"
         state: absent
       become: yes
-  when: existing_deploy.stat.exists == True
+  when: existing_deploy.stat.exists
 
 - block:
     - name: download Keycloak archive to target
@@ -91,8 +91,8 @@
 
 - block:
     - name: download Keycloak archive to local
-      local_action:
-        module: get_url
+      delegate_to: localhost
+      get_url:
         url: "{{ keycloak_url }}"
         dest: "{{ keycloak_local_download_dest }}/{{ keycloak_archive }}"
     - name: extract Keycloak archive on local
@@ -209,8 +209,8 @@
     state: enabled
     immediate: yes
   with_items:
-    - "{{keycloak_http_port}}/tcp"
-    - "{{keycloak_https_port}}/tcp"
+    - "{{ keycloak_http_port }}/tcp"
+    - "{{ keycloak_https_port }}/tcp"
   become: yes
 
 - name: configure sysconfig file for keycloak service
