@@ -3,7 +3,7 @@
   hosts: all
 
   roles:
-    - role: keycloak
+    - role: moisesguimaraes.keycloak
 
   vars:
     keycloak_admin_password: password

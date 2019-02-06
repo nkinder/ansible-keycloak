@@ -4,17 +4,23 @@ language: python
 services: docker
 
 env:
+  global:
+    - ROLE_NAME: keycloak
   matrix:
     - MOLECULE_DISTRO="centos:7"
     - MOLECULE_DISTRO="fedora:28"
     - MOLECULE_DISTRO="fedora:29"
 
 install:
+  # Install test dependencies.
   - pip install molecule docker
 
-script:
-  - molecule test
+before_script:
+  # Use actual Ansible Galaxy role name for the project directory.
+  - cd ../
+  - mv ansible-role-$ROLE_NAME moisesguimaraes.$ROLE_NAME
+  - cd moisesguimaraes.$ROLE_NAME
 
-branches:
-  only:
-    - master
+script:
+  # Run tests.
+  - molecule test
