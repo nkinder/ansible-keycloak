@@ -5,7 +5,7 @@ services: docker
 
 env:
   global:
-    - ROLE_NAME: keycloak
+    - ROLE_NAME: nkinder.keycloak
   matrix:
     - MOLECULE_DISTRO="centos:7"
     - MOLECULE_DISTRO="fedora:28"
@@ -17,9 +17,10 @@ install:
 
 before_script:
   # Use actual Ansible Galaxy role name for the project directory.
+  - REPO_PATH=${PWD##*/}
   - cd ../
-  - mv ansible-role-$ROLE_NAME moisesguimaraes.$ROLE_NAME
-  - cd moisesguimaraes.$ROLE_NAME
+  - mv $REPO_PATH $ROLE_NAME
+  - cd $ROLE_NAME
 
 script:
   # Run tests.

@@ -13,4 +13,4 @@ Requirements
 Install
 =======
 
-    $ sudo pip install docker-py
+    $ sudo pip install -r test-requirements.txt
