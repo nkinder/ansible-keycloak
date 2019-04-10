@@ -1,26 +1,48 @@
 ---
-# Version and download settings
+### Version and download settings
 keycloak_version: 4.8.2.Final
 keycloak_archive: keycloak-{{ keycloak_version }}.zip
 keycloak_url: https://downloads.jboss.org/keycloak/{{
               keycloak_version }}/{{ keycloak_archive }}
-keycloak_local_download_dest: ~/keycloak_download
+keycloak_local_download_dest: "{{ \"~/keycloak_download\" | expanduser }}"
 
-# Install location and service settings
+### Install location and service settings
 keycloak_dest: /opt/keycloak
 keycloak_jboss_home: "{{ keycloak_dest }}/keycloak-{{ keycloak_version }}"
 keycloak_config_dir: "{{ keycloak_jboss_home }}/standalone/configuration"
 keycloak_service_user: keycloak
 keycloak_service_group: keycloak
 
-# Keycloak configuration settings
+### Keycloak configuration settings
 keycloak_bind_address: 0.0.0.0
 keycloak_http_port: 8080
 keycloak_https_port: 8443
+keycloak_management_http_port: 9990
+keycloak_management_https_port: 9993
+
+
 keycloak_admin_user: admin
 
-# TLS
+### TLS
 keycloak_keystore_name: ansible-keycloak-server.p12
+keycloak_tls_files_on_target: false
 
-# Optional Behavior
+### Optional Behavior
+
+# If Keycloak is already installed remove it and re-install
+keycloak_force: false
+
+# Download Keycloak distribution to target system instead of
+# local system where ansible playbook was run from.
 keycloak_archive_on_target: false
+
+# Number of seconds to wait for Keycloak to start (default: 5 minutes)
+keycloak_startup_timeout: 300
+
+# Number of milliseconds to wait for jboss configuration utility
+# to connect to wildfly server (default: 5 seconds)
+keycloak_jboss_config_connect_timeout: 5000
+
+# Number of seconds to wait for jboss configuration utility
+# to complete each command executed in configuration file (default: 1 minute)
+keycloak_jboss_config_command_timeout: 60

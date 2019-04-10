@@ -20,9 +20,6 @@ provisioner:
     name: ansible-lint
 scenario:
   name: default
-  # This role is currently not idempotent, as we fail when a deployment
-  # aready exists.  We skip this test for now, though it would be a good idea
-  # to make the role idempotent.
   test_sequence:
     - lint
     - destroy
@@ -31,7 +28,7 @@ scenario:
     - create
     - prepare
     - converge
-    # - idempotence
+    - idempotence
     - side_effect
     - verify
     - destroy

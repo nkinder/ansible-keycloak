@@ -40,7 +40,7 @@ database.  A force variable can be set to overwrite the existing deployment.
 This can be either be set as a variable in the playbook, or added on the
 command line as an extra-var:
 
-  `ansible-playbook ... --extra-vars "force=yes"`
+  `ansible-playbook ... --extra-vars "keycloak_force=yes"`
 
 Controlling the location of the Keycloak archive
 ------------------------------------------------
@@ -97,15 +97,34 @@ on, the following variables can be set:
 For TLS via PKCS12 bundle, the following additional variables must be
 provided:
 
-- `keycloak_tls_pkcs12` (local path to PKCS12 bundle)
+- `keycloak_tls_pkcs12` (path to PKCS12 bundle)
 - `keycloak_tls_pkcs12_passphrase` (use ansible-vault to protect)
 - `keycloak_tls_pkcs12_alias` (name of key/cert in `keycloak_tls_pkcs12`)
 
 For TLS via key/cert files, the following additional variables must be
 provided:
 
-- `keycloak_tls_cert` (local path to TLS server cert file)
-- `keycloak_tls_key` (local path to TLS server key file)
+- `keycloak_tls_cert` (path to TLS server cert file)
+- `keycloak_tls_key` (path to TLS server key file)
+
+**NOTE:** the source TLS files (`keycloak_tls_pkcs12`,
+`keycloak_tls_cert`, `keycloak_tls_key`) used to create the Keycloak
+keystore may reside either on the Ansible controller (i.e. local) or
+on the remote target host. By default the role assumes the source TLS
+files are local. If however the source TLS files are located on the
+remote target set the variable `keycloak_tls_files_on_target` to True.
+
+You can control timeout values with the following variables:
+
+`keycloak_startup_timeout`: Number of seconds to wait for Keycloak to
+start.
+
+`keycloak_jboss_config_connect_timeout`: Number of milliseconds to
+wait for jboss configuration utilityto connect to wildfly server.
+
+`keycloak_jboss_config_command_timeout`: Number of seconds to wait for
+jboss configuration utility to complete each command executed in
+configuration file
 
 See `roles/keycloak/defaults/main.yml` for a list of other variable
 defaults that one may want to override.
