@@ -40,7 +40,7 @@ database.  A force variable can be set to overwrite the existing deployment.
 This can be either be set as a variable in the playbook, or added on the
 command line as an extra-var:
 
-  `ansible-playbook ... --extra-vars "keycloak_force=yes"`
+  `ansible-playbook ... --extra-vars "keycloak_force_install=yes"`
 
 Controlling the location of the Keycloak archive
 ------------------------------------------------

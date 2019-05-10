@@ -21,7 +21,7 @@
         path: "{{ keycloak_jboss_home }}"
         state: absent
       become: yes
-  when: existing_deploy.stat.exists and keycloak_force|bool
+  when: existing_deploy.stat.exists and keycloak_force_install|bool
 
 - name: check for an existing deployment after possible forced removal
   stat:
