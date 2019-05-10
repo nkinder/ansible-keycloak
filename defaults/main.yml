@@ -30,7 +30,7 @@ keycloak_tls_files_on_target: false
 ### Optional Behavior
 
 # If Keycloak is already installed remove it and re-install
-keycloak_force: false
+keycloak_force_install: false
 
 # Download Keycloak distribution to target system instead of
 # local system where ansible playbook was run from.
