@@ -46,3 +46,6 @@ keycloak_jboss_config_connect_timeout: 5000
 # Number of seconds to wait for jboss configuration utility
 # to complete each command executed in configuration file (default: 1 minute)
 keycloak_jboss_config_command_timeout: 60
+
+# Configure the firewall to allow access to Keycloak public ports
+keycloak_configure_firewall: true

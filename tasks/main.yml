@@ -52,7 +52,6 @@
       package:
         name: "{{ item }}"
       loop:
-        - firewalld
         - java-1.8.0-openjdk-headless
         - unzip
         - pyOpenSSL
@@ -201,12 +200,21 @@
         - keycloak_tls_cert is not defined
         - keycloak_tls_pkcs12 is defined
 
+    - name: install firewalld
+      package:
+        name: firewalld
+      become: yes
+      when:
+        - keycloak_configure_firewall
+
     - name: enable and start the firewalld service
       systemd:
         name: firewalld
         enabled: yes
         state: started
       become: yes
+      when:
+        - keycloak_configure_firewall
 
     - name: configure firewall for Keycloak ports
       firewalld:
@@ -218,6 +226,8 @@
         - "{{ keycloak_http_port }}/tcp"
         - "{{ keycloak_https_port }}/tcp"
       become: yes
+      when:
+        - keycloak_configure_firewall
 
     - name: configure sysconfig file for keycloak service
       template:
