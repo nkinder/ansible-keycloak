@@ -14,6 +14,9 @@ env:
 install:
   # Install test dependencies.
   - pip install -r test-requirements.txt
+  # workaround until https://github.com/ansible/molecule/issues/1727 is fixed
+  - pip uninstall -y testinfra
+  - pip install testinfra
 
 before_script:
   # Use actual Ansible Galaxy role name for the project directory.
