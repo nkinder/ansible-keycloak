@@ -49,3 +49,6 @@ keycloak_jboss_config_command_timeout: 60
 
 # Configure the firewall to allow access to Keycloak public ports
 keycloak_configure_firewall: true
+
+# Configure the JAVA_OPTS used by the Keycloak service
+keycloak_java_opts: "-Xms1024m -Xmx20480m -XX:MaxPermSize=768m"
