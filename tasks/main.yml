@@ -89,6 +89,8 @@
             creates: "{{ keycloak_jboss_home }}"
             owner: "{{ keycloak_service_user }}"
             group: "{{ keycloak_service_group }}"
+          notify:
+            - restart keycloak
       become: yes
       when: keycloak_archive_on_target
 
@@ -107,6 +109,8 @@
             owner: "{{ keycloak_service_user }}"
             group: "{{ keycloak_service_group }}"
           become: yes
+          notify:
+            - restart keycloak
       when: not keycloak_archive_on_target
 
     - name: create Keycloak admin user
@@ -114,9 +118,9 @@
       args:
         argv:
           - "{{ keycloak_jboss_home }}/bin/add-user-keycloak.sh"
-          - -r master
-          - -u {{ keycloak_admin_user }}
-          - -p {{ keycloak_admin_password }}
+          - -rmaster
+          - -u{{ keycloak_admin_user }}
+          - -p{{ keycloak_admin_password }}
         creates: "{{ keycloak_config_dir }}/keycloak-add-user.json"
       become: yes
       tags:
