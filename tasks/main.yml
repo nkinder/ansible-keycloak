@@ -299,4 +299,72 @@
       become: yes
       when: (keycloak_tls_pkcs12 is defined) or
             (keycloak_generated_pkcs12_bundle is changed)
+
+    # This part enables both the proxy and https reverse proxy
+    #
+    # The jboss-cli.sh tool requires the management interface to be up,
+    # so we wait until it is available.  The management interface comes
+    # up in two stages, so we first need to wait for an answer on the port
+    # and we still need a long timeout for the jboss-cli.sh tool to wait
+    # for internal first-boot initialization to complete.  We must finally
+    # restart the keycloak service for our changes to take effect.
+    - name: Enable Keycloak Reverse Proxy Settings
+      block:
+        - name: wait for Keycloak management interface to be available
+          wait_for:
+            port: "{{ keycloak_management_http_port }}"
+            timeout: "{{ keycloak_startup_timeout }}"
+        - name: create jboss-cli.sh command file for reverse proxy
+          template:
+            src: keycloak-proxy-fwd.cli.j2
+            dest: "{{ keycloak_config_dir }}/keycloak-proxy-fwd.cli"
+            owner: root
+            group: root
+            mode: 0600
+          when: keycloak_revproxy_forwarding|bool
+        - name: apply keycloak reverse proxy configuration
+          command:
+          args:
+            argv:
+              - "{{ keycloak_jboss_home }}/bin/jboss-cli.sh"
+              - --connect
+              - --timeout={{ keycloak_jboss_config_connect_timeout }}
+              - --command-timeout={{ keycloak_jboss_config_command_timeout }}
+              - --file={{ keycloak_config_dir }}/keycloak-proxy-fwd.cli
+          notify:
+            - restart keycloak
+          tags:
+            - skip_ansible_lint
+          when: keycloak_revproxy_forwarding|bool
+
+        - name: create jboss-cli.sh command file for https reverse proxy
+          template:
+            src: keycloak-socket-binding.cli.j2
+            dest: "{{ keycloak_config_dir }}/keycloak-socket-binding.cli"
+            owner: root
+            group: root
+            mode: 0600
+          when: keycloak_revproxy_https|bool
+        - name: apply keycloak reverse https proxy configuration
+          command:
+          args:
+            argv:
+              - "{{ keycloak_jboss_home }}/bin/jboss-cli.sh"
+              - --connect
+              - --timeout={{ keycloak_jboss_config_connect_timeout }}
+              - --command-timeout={{ keycloak_jboss_config_command_timeout }}
+              - --file={{ keycloak_config_dir }}/keycloak-socket-binding.cli
+          notify:
+            - restart keycloak
+          tags:
+            - skip_ansible_lint
+          when: keycloak_revproxy_https|bool
+
+        - name: clean up jboss-cli-sh command file
+          file:
+            path: "{{ keycloak_config_dir }}/keycloak-proxy-fwd.cli"
+            state: absent
+      become: yes
+      when: keycloak_revproxy_forwarding|bool or keycloak_revproxy_https|bool
+
   when: not existing_deploy.stat.exists
