@@ -299,9 +299,9 @@
       become: yes
       when: (keycloak_tls_pkcs12 is defined) or
             (keycloak_generated_pkcs12_bundle is changed)
-    
+
     # This part enables both the proxy and https reverse proxy
-    # 
+    #
     # The jboss-cli.sh tool requires the management interface to be up,
     # so we wait until it is available.  The management interface comes
     # up in two stages, so we first need to wait for an answer on the port
@@ -336,7 +336,7 @@
           tags:
             - skip_ansible_lint
           when: keycloak_revproxy_forwarding|bool
-        
+
         - name: create jboss-cli.sh command file for https reverse proxy
           template:
             src: keycloak-socket-binding.cli.j2
