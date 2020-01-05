@@ -1,0 +1,6 @@
+#  Enable https listener for the new security realm
+/subsystem=undertow/ \
+  server=default-server/ \
+    http-listener=default \
+      :write-attribute(name=proxy-address-forwarding, \
+                       value=true)

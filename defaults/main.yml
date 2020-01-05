@@ -52,3 +52,11 @@ keycloak_configure_firewall: true
 
 # Configure the JAVA_OPTS used by the Keycloak service
 keycloak_java_opts: "-Xms1024m -Xmx20480m -XX:MaxPermSize=768m"
+
+# Enable proxy address forwarding in the http handler
+keycloak_revproxy_forwarding: false
+
+# Enable HTTPs rewriting (used if HTTPs is terminated by the reverse proxy and not by keycloak itself)
+# Only used if there is proxy address forwarding configured
+keycloak_revproxy_https: false
+keycloak_revproxy_https_port: 443
