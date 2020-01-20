@@ -217,6 +217,15 @@
             state: started
           become: yes
 
+        - name: TMP Firewalld status
+          shell:
+            cmd: systemctl status firewalld
+          register: firewalld_status
+
+        - name: TMP Show status message
+          debug:
+            msg: "{{ firewalld_status.stdout }}"
+
         - name: wait for firewall started 5 minutes timeout
           shell:
             cmd: firewall-cmd --state
