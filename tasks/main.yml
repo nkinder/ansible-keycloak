@@ -223,7 +223,7 @@
           register: firewalld_state
           until: >
             firewalld_state.stdout == 'running'
-          retries: 60
+          retries: 10
           delay: 5
 
         - name: configure firewall for Keycloak ports
