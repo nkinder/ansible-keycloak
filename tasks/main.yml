@@ -222,8 +222,7 @@
             cmd: firewall-cmd --state
           register: firewalld_state
           until: >
-            firewalld_state.stdout == 'running' and
-            firewalld_state.stderr == ''
+            firewalld_state.stdout == 'running'
           retries: 60
           delay: 5
 
