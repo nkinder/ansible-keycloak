@@ -54,7 +54,7 @@
       loop:
         - java-1.8.0-openjdk-headless
         - unzip
-        - pyOpenSSL
+        - "{{ keycloak_dep_pyOpenSSL }}"
       become: yes
 
     - name: create Keycloak service user/group
