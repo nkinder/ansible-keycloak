@@ -8,9 +8,11 @@
 - name: Set python interpreter to 3
   set_fact:
     ansible_python_interpreter: "/usr/bin/python3"
+    keycloak_dep_pyOpenSSL: "python3-pyOpenSSL"
   when: py3test.rc == 0
 
 - name: Set python interpreter to 2
   set_fact:
     ansible_python_interpreter: "/usr/bin/python2"
+    keycloak_dep_pyOpenSSL: "pyOpenSSL"
   when: py3test.failed or py3test.rc != 0
