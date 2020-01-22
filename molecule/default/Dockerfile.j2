@@ -7,8 +7,27 @@ FROM {{ item.image }}
 {% endif %}
 
 RUN if [ $(command -v apt-get) ]; then apt-get update && apt-get install -y python sudo bash ca-certificates && apt-get clean; \
-    elif [ $(command -v dnf) ]; then dnf makecache && dnf --assumeyes install python sudo python-devel python2-dnf bash && dnf clean all; \
+    elif [ $(command -v dnf) ]; then dnf makecache && dnf --assumeyes install python sudo python-devel python3-dnf bash && dnf clean all; \
     elif [ $(command -v yum) ]; then yum makecache fast && yum install -y python sudo yum-plugin-ovl bash && sed -i 's/plugins=0/plugins=1/g' /etc/yum.conf && yum clean all; \
     elif [ $(command -v zypper) ]; then zypper refresh && zypper install -y python sudo bash python-xml && zypper clean -a; \
     elif [ $(command -v apk) ]; then apk update && apk add --no-cache python sudo bash ca-certificates; \
     elif [ $(command -v xbps-install) ]; then xbps-install -Syu && xbps-install -y python sudo bash ca-certificates && xbps-remove -O; fi
+
+# Workaround to avoid issue #22 with Travis CI test failures due to 
+# firewalld not seeing kernel modules
+# TODO: remove when fixes released for Centos and Fedora
+
+{% if item.image == "centos:7"
+   or item.image == "fedora:30"
+   or item.image == "fedora:31" %}
+
+RUN yum -y install kmod
+RUN yum -y install firewalld
+RUN export MODULES_DIR=/lib/modules/$(uname -r); \
+    mkdir -p ${MODULES_DIR}; \
+    /bin/truncate --size=0 ${MODULES_DIR}/modules.builtin; \
+    /bin/truncate --size=0 ${MODULES_DIR}/modules.order; \
+    for i in /sys/module/*; do echo kernel/${i##**/}.ko; done >> ${MODULES_DIR}/modules.builtin; \
+    if [ -f /usr/sbin/depmod ]; then depmod -a; fi;
+
+{% endif %}

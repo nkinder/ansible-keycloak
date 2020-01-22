@@ -8,8 +8,8 @@ env:
     - ROLE_NAME: nkinder.keycloak
   matrix:
     - MOLECULE_DISTRO="centos:7"
-    - MOLECULE_DISTRO="fedora:28"
-    - MOLECULE_DISTRO="fedora:29"
+    - MOLECULE_DISTRO="fedora:30"
+    - MOLECULE_DISTRO="fedora:31"
 
 install:
   # Install test dependencies.
