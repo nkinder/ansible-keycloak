@@ -73,7 +73,7 @@ You can choose what version of Keycloak to install by setting the following
 variable.  This will be used to determine the download URL to use from
 https://www.keycloak.org/downloads.html:
 
-- `keycloak_version` (default: `4.8.2.Final`)
+- `keycloak_version` (default: `7.0.0`)
 
 The following variable always needs to be provided, as the role does
 not hardcode a default:
