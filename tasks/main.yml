@@ -51,10 +51,11 @@
     - name: install dependencies
       package:
         name: "{{ item }}"
-      loop:
-        - java-1.8.0-openjdk-headless
-        - unzip
-        - pyOpenSSL
+      loop: '{{ deps + python_deps | default([]) }}'
+      vars:
+        deps:
+          - java-1.8.0-openjdk-headless
+          - unzip
       become: yes
 
     - name: create Keycloak service user/group

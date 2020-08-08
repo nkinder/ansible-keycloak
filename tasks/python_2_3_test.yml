@@ -28,12 +28,14 @@
 - name: Tasks for Python 2
   block:
     - set_fact:
-        keycloak_dep_pyOpenSSL: "pyOpenSSL"
+        python_deps:
+          - pyOpenSSL
   when: python_major_version == 2
 
 
 - name: Tasks for Python 3
   block:
     - set_fact:
-        keycloak_dep_pyOpenSSL: "python3-pyOpenSSL"
+        python_deps:
+          - python3-pyOpenSSL
   when: python_major_version == 3
