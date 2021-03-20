@@ -56,6 +56,17 @@
         - unzip
         - "{{ keycloak_dep_pyOpenSSL }}"
       become: yes
+      when: (ansible_facts['distribution'] != "Debian" or ansible_facts['distribution_major_version'] != "10")
+
+    - name: install dependencies
+      package:
+        name: "{{ item }}"
+      loop:
+        - openjdk-11-jdk-headless
+        - python3-openssl
+        - unzip
+      become: yes
+      when: (ansible_facts['distribution'] == "Debian" and ansible_facts['distribution_major_version'] == "10")
 
     - name: create Keycloak service user/group
       user:
@@ -232,6 +243,15 @@
       become: yes
       when:
         - keycloak_configure_firewall
+
+    - name: create sysconfig directory
+      file:
+        path: /etc/sysconfig
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+      become: yes
 
     - name: configure sysconfig file for keycloak service
       template:
